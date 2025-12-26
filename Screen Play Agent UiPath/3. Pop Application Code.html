@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chaos Form - Conditional Submit</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 999; 
+            backdrop-filter: blur(5px);
+        }
+
+        .form-container {
+            background: white;
+            width: 550px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .locked {
+            filter: blur(8px) grayscale(100%);
+            pointer-events: none;
+            transform: scale(0.98);
+        }
+
+        #dynamic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px 20px;
+        }
+
+        .input-group { display: flex; flex-direction: column; }
+        label { color: #888; font-size: 13px; margin-bottom: 5px; }
+        input { border: none; border-bottom: 2px solid #ddd; padding: 10px 0; outline: none; font-size: 15px; background: transparent; }
+        input:focus { border-bottom-color: #ff5100; }
+        
+        /* Submit Button Styling */
+        .submit-btn {
+            margin-top: 40px;
+            background-color: #ff5100;
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: opacity 0.3s, background-color 0.3s;
+        }
+
+        /* Disabled State */
+        .submit-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .popup {
+            position: fixed;
+            background: white;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            z-index: 1000;
+            width: 280px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .popup h3 { margin-top: 0; font-size: 18px; color: #ff5100; }
+        .btn-wrapper { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        .popup-btn { flex: 1; padding: 10px; border: 1px solid #ddd; background: #fff; cursor: pointer; border-radius: 5px; }
+        .popup-btn.main { background: #333; color: white; border: none; }
+    </style>
+</head>
+<body>
+
+<div id="overlay"></div>
+
+<div class="form-container" id="main-container">
+    <form id="chaos-form" novalidate>
+        <div id="dynamic-grid"></div>
+        <button type="submit" id="submit-button" class="submit-btn" disabled>SUBMIT</button>
+    </form>
+</div>
+
+<script>
+    const grid = document.getElementById('dynamic-grid');
+    const form = document.getElementById('chaos-form');
+    const submitBtn = document.getElementById('submit-button');
+    const overlay = document.getElementById('overlay');
+    const container = document.getElementById('main-container');
+
+    const fields = [
+        { label: 'Company Name' }, { label: 'Role in Company' },
+        { label: 'Phone Number' }, { label: 'Address' },
+        { label: 'First Name' }, { label: 'Last Name' },
+        { label: 'Email' }
+    ];
+
+    const randomMsgs = [
+        { title: "Interrupting!", text: "Did you forget to blink? Take a break and click a button." },
+        { title: "System Check", text: "Are you still there? Please confirm your existence." },
+        { title: "Notice", text: "The layout engine is feeling bored. Prepare for changes." }
+    ];
+
+    // Function to check if all inputs are filled
+    function validateForm() {
+        const inputs = Array.from(grid.querySelectorAll('input'));
+        const allFilled = inputs.every(input => input.value.trim() !== "");
+        submitBtn.disabled = !allFilled;
+    }
+
+    function renderFields() {
+        grid.innerHTML = '';
+        const shuffled = [...fields].sort(() => Math.random() - 0.5);
+        shuffled.forEach(f => {
+            const div = document.createElement('div');
+            div.className = 'input-group';
+            const input = document.createElement('input');
+            input.type = "text";
+            input.autocomplete = "off";
+            
+            // Add event listener to each new input
+            input.addEventListener('input', validateForm);
+            
+            const label = document.createElement('label');
+            label.innerText = f.label;
+            
+            div.appendChild(label);
+            div.appendChild(input);
+            grid.appendChild(div);
+        });
+        validateForm(); // Reset button state on render
+    }
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        renderFields();
+        form.reset();
+        showPopup("Submission Received", "The form has been scrambled. All inputs cleared.");
+    });
+
+    function showPopup(customTitle, customText) {
+        if (overlay.style.display === 'block') return;
+        overlay.style.display = 'block';
+        container.classList.add('locked');
+
+        const msg = randomMsgs[Math.floor(Math.random() * randomMsgs.length)];
+        const popup = document.createElement('div');
+        popup.className = 'popup';
+        
+        const labelText = ["OK", "Accept", "Confirm"][Math.floor(Math.random() * 3)];
+        popup.innerHTML = `
+            <h3>${customTitle || msg.title}</h3>
+            <p>${customText || msg.text}</p>
+            <div class="btn-wrapper"><button class="popup-btn main">${labelText}</button></div>
+        `;
+
+        popup.style.left = (Math.random() * (window.innerWidth - 300)) + 'px';
+        popup.style.top = (Math.random() * (window.innerHeight - 250)) + 'px';
+
+        document.body.appendChild(popup);
+
+        popup.querySelector('.popup-btn').onclick = () => {
+            popup.remove();
+            overlay.style.display = 'none';
+            container.classList.remove('locked');
+            startRandomTimer();
+        };
+    }
+
+    function startRandomTimer() {
+        const delay = Math.random() * (15000 - 8000) + 8000;
+        setTimeout(() => { if(overlay.style.display !== 'block') showPopup(); }, delay);
+    }
+
+    renderFields();
+    startRandomTimer();
+</script>
+
+</body>
+</html>
